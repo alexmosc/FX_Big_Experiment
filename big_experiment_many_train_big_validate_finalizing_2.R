@@ -574,7 +574,7 @@ write.table(all_results_gbm_df, file = 'Large_Study_3part/all_results_gbm_df.csv
 
 
 
-###########################
+########################### Charts
 #####################
 
 setwd('C:/R_study/fx/big_experiment/')
@@ -997,7 +997,26 @@ top_counts[,
 ##################
 ############### Trade Sequence Modelling for Best Validation_1 Models
 
-load(file = 'C:/R_study/fx/big_experiment/Data/many_train_samples.R')
+setwd('C:/R_study/fx/big_experiment/')
+
+library(data.table)
+library(caret)
+library(gbm)
+library(doParallel)
+library(tseries)
+library(gridExtra)
+
+
+load(file = 'Large_Study_3part/all_models_gbm_list.R')
+
+all_results_gbm_df <- fread('Large_Study_3part/all_results_gbm_df.csv'
+				 , header = T
+				 , sep = ';'
+				 , dec = ',')
+
+working_data <- all_results_gbm_df
+
+load(file = 'Data/many_train_samples.R')
 
 model_symbol <- 'gbpusd'
 model_target <- 181
@@ -1011,8 +1030,6 @@ rm(many_train_samples)
 
 all_dat_train <- all_dat_train[symbol == model_symbol, ]
 
-gc()
-
 models <- model_set_00[, models]
 
 all_dat_train[, (paste('model_output_', models, sep = '')):= lapply(models, function(x) as.numeric(predict(object = all_models_gbm_list[[x]]
@@ -1023,6 +1040,8 @@ predictions <- all_dat_train[, 133:231, with = F]
 
 rm(all_dat_train)
 
+gc()
+
 predictions[, model_avg:= rowMeans(.SD), .SDcols = c(1:99)]
 
 quantile_threshold <- 0.9
@@ -1032,15 +1051,19 @@ gray_zone_thresholds <- c(
 	, quantile(predictions[, model_avg], 0.5 + quantile_threshold / 2))
 
 
-### validation data
-load(file = 'C:/R_study/fx/big_experiment/Data/big_dat_test.R')
+###### validation data
+
+load(file = 'Data/big_dat_test.R')
 
 big_dat_test <- as.data.table(big_dat_test)
 big_dat_test <- big_dat_test[symbol == model_symbol, ]
 
 big_dat_test[, (paste('model_output_', models, sep = '')):= lapply(models, function(x) as.numeric(predict(object = all_models_gbm_list[[x]]
-													   , newdata = .SD[, 1:114, with = F]
-													   , n.trees = all_models_gbm_list[[x]]$n.trees)))]
+													  , newdata = .SD[, 1:114, with = F]
+													  , n.trees = all_models_gbm_list[[x]]$n.trees)))]
+
+rm(all_models_gbm_list)
+gc()
 
 validate_predictions <- big_dat_test[, c(128, 133:231), with = F]
 rm(big_dat_test)
@@ -1051,7 +1074,7 @@ validate_trades <- validate_predictions[select == 1, trades]
 random_trades <- validate_predictions[, trades]
 
 ############ build sequence of trades
-nseq <- 100
+nseq <- 50
 
 modeled_trade_number <- round(5827000/3/2/model_target)
 
@@ -1107,29 +1130,57 @@ validate_sequence_rand_dt <- as.data.table(do.call(c, validate_sequence_rand))
 validate_sequence_rand_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
 validate_sequence_rand_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 
-last_distr <- as.data.table(c(validate_sequence_dt[step == modeled_trade_number, V1]
-		    , validate_sequence_up_dt[step == modeled_trade_number, V1]
-		    , validate_sequence_down_dt[step == modeled_trade_number, V1]
-		    , validate_sequence_rand_dt[step == modeled_trade_number, V1]))
+all_sequences <- rbind(validate_sequence_dt
+		       , validate_sequence_up_dt
+		       , validate_sequence_down_dt
+		       , validate_sequence_rand_dt)
+
+all_sequences[, model_type:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = modeled_trade_number * nseq)]
+
+last_distr <- all_sequences[, V1[.N], by = .(model_type, sample)]
 last_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = nseq)]
+
+rf_distr <- all_sequences[, V1[.N] / maxdrawdown(V1)[[1]], by = .(model_type, sample)]
+rf_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = nseq)]
+
 
 
 ############ plot sequences
 
-p1 <- ggplot(data = validate_sequence_dt, aes(x = step, y = V1, group = as.factor(sample))) +
-	geom_line(size = 2, alpha = 0.1, colour = 'green') +
-	geom_line(data = validate_sequence_up_dt, aes(x = step, y = V1, group = as.factor(sample)), size = 1, alpha = 0.03, colour = 'blue') +
-	geom_line(data = validate_sequence_down_dt, aes(x = step, y = V1, group = as.factor(sample)), size = 1, alpha = 0.03, colour = 'red') +
-	geom_line(data = validate_sequence_rand_dt, aes(x = step, y = V1, group = as.factor(sample)), size = 1, alpha = 0.03, colour = 'grey')
-
+p1 <- ggplot(data = all_sequences, aes(x = step, y = V1, group = sample, color = model_type)) +
+	geom_line(size = 2, alpha = 0.1) +
+	ggtitle('Simulated Cumulative Trading Outcomes') +
+	ylab("Cumulative Points") +
+	xlab("Trade Sequence") +
+	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
+	      
 p2 <- ggplot(data = last_distr, aes(x = V1, group = as.factor(sample), fill = as.factor(sample), color = as.factor(sample))) +
 	geom_density(alpha = 0.3) + 
 	coord_flip() +
-	scale_x_continuous(limits = c(min(last_distr$V1), max(last_distr$V1)))
-
-grid.arrange(p1, p2, ncol = 2)
-
-
+	scale_x_continuous(limits = c(min(last_distr$V1), max(last_distr$V1))) +
+	ggtitle('Cumulative Profit (Point) Density') +
+	ylab("Density") +
+	xlab("Cumulative Points") +
+	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
+	
+p3 <- ggplot(data = rf_distr, aes(x = V1, fill = sample, color = sample)) +
+	geom_density(alpha = 0.3) +
+	facet_wrap(~ sample, scales = 'free', ncol = 1) +
+	ggtitle('Recovery Factor Density') +
+	ylab("Density") +
+	xlab("Recovery Factor") +
+	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
+	
+grid.arrange(p1, p2, p3, ncol = 3)
 
 
 
