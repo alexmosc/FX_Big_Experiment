@@ -993,20 +993,23 @@ top_counts[,
 
 
 
-
+######################
 ##################
 ############### Trade Sequence Modelling for Best Validation_1 Models
 
-load(file = 'C:/R_study/fx/many_train_samples.R')
+load(file = 'C:/R_study/fx/big_experiment/Data/many_train_samples.R')
 
-model_set_00 <- working_data[symbol == 'gbpusd' & target2 == 181, c(5, 20:38), with = F]
+model_symbol <- 'gbpusd'
+model_target <- 181
+
+model_set_00 <- working_data[symbol == model_symbol & target2 == model_target, c(5, 20:38), with = F]
 setorder(model_set_00, - trade_mean_spreaded_cv)
 
 all_dat_train <- as.data.table(do.call(rbind, many_train_samples))
 
 rm(many_train_samples)
 
-all_dat_train <- all_dat_train[symbol == 'gbpusd', ]
+all_dat_train <- all_dat_train[symbol == model_symbol, ]
 
 gc()
 
@@ -1030,10 +1033,10 @@ gray_zone_thresholds <- c(
 
 
 ### validation data
-load(file = 'C:/R_study/fx/big_dat_test.R')
+load(file = 'C:/R_study/fx/big_experiment/Data/big_dat_test.R')
 
 big_dat_test <- as.data.table(big_dat_test)
-big_dat_test <- big_dat_test[symbol == 'gbpusd', ]
+big_dat_test <- big_dat_test[symbol == model_symbol, ]
 
 big_dat_test[, (paste('model_output_', models, sep = '')):= lapply(models, function(x) as.numeric(predict(object = all_models_gbm_list[[x]]
 													   , newdata = .SD[, 1:114, with = F]
@@ -1048,12 +1051,14 @@ validate_trades <- validate_predictions[select == 1, trades]
 random_trades <- validate_predictions[, trades]
 
 ############ build sequence of trades
-nseq <- 500
+nseq <- 100
+
+modeled_trade_number <- round(5827000/3/2/model_target)
 
 #
 validate_indexes <- list()
 for (i in 1:nseq){
-	n <- sample(length(validate_trades) / 2, round(nrow(validate_predictions) / 2 / 181), replace = FALSE)
+	n <- sample(round(length(validate_trades) / 2), modeled_trade_number, replace = FALSE)
 	validate_indexes[[i]] <- sort(n, decreasing = F)
 }
 
@@ -1063,13 +1068,13 @@ for (i in 1:nseq){
 }
 
 validate_sequence_dt <- as.data.table(do.call(c, validate_sequence))
-validate_sequence_dt[, step:= rep(1:round(nrow(validate_predictions) / 2 / 181), times = nseq)]
-validate_sequence_dt[, sample:= rep(1:nseq, each = round(nrow(validate_predictions) / 2 / 181))]
+validate_sequence_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
+validate_sequence_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 
 ### up
 validate_indexes <- list()
 for (i in 1:nseq){
-	n <- sample(length(random_trades) / 2, round(nrow(validate_predictions) / 2 / 181), replace = FALSE)
+	n <- sample(round(length(random_trades) / 2), modeled_trade_number, replace = FALSE)
 	validate_indexes[[i]] <- sort(n, decreasing = F)
 }
 
@@ -1079,8 +1084,8 @@ for (i in 1:nseq){
 }
 
 validate_sequence_up_dt <- as.data.table(do.call(c, validate_sequence_up))
-validate_sequence_up_dt[, step:= rep(1:round(nrow(validate_predictions) / 2 / 181), times = nseq)]
-validate_sequence_up_dt[, sample:= rep(1:nseq, each = round(nrow(validate_predictions) / 2 / 181))]
+validate_sequence_up_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
+validate_sequence_up_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 
 ### down
 validate_sequence_down <- list()
@@ -1089,8 +1094,8 @@ for (i in 1:nseq){
 }
 
 validate_sequence_down_dt <- as.data.table(do.call(c, validate_sequence_down))
-validate_sequence_down_dt[, step:= rep(1:round(nrow(validate_predictions) / 2 / 181), times = nseq)]
-validate_sequence_down_dt[, sample:= rep(1:nseq, each = round(nrow(validate_predictions) / 2 / 181))]
+validate_sequence_down_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
+validate_sequence_down_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 
 ### rand
 validate_sequence_rand <- list()
@@ -1099,13 +1104,13 @@ for (i in 1:nseq){
 }
 
 validate_sequence_rand_dt <- as.data.table(do.call(c, validate_sequence_rand))
-validate_sequence_rand_dt[, step:= rep(1:round(nrow(validate_predictions) / 2 / 181), times = nseq)]
-validate_sequence_rand_dt[, sample:= rep(1:nseq, each = round(nrow(validate_predictions) / 2 / 181))]
+validate_sequence_rand_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
+validate_sequence_rand_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 
-last_distr <- as.data.table(c(validate_sequence_dt[step == round(nrow(validate_predictions) / 2 / 181), V1]
-		    , validate_sequence_up_dt[step == round(nrow(validate_predictions) / 2 / 181), V1]
-		    , validate_sequence_down_dt[step == round(nrow(validate_predictions) / 2 / 181), V1]
-		    , validate_sequence_rand_dt[step == round(nrow(validate_predictions) / 2 / 181), V1]))
+last_distr <- as.data.table(c(validate_sequence_dt[step == modeled_trade_number, V1]
+		    , validate_sequence_up_dt[step == modeled_trade_number, V1]
+		    , validate_sequence_down_dt[step == modeled_trade_number, V1]
+		    , validate_sequence_rand_dt[step == modeled_trade_number, V1]))
 last_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = nseq)]
 
 
