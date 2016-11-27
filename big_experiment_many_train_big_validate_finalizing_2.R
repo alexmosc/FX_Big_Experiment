@@ -627,14 +627,16 @@ dev.off()
 
 title <- "Distributions of Squared Error Decrease by Symbol and Target for Validation_1 Samples"
 
-p <- ggplot(data = working_data, aes(x = as.factor(target2), y = r_sqr_validate, fill = as.factor(target2))) + 
+p <- ggplot(data = working_data, aes(x = as.factor(target2), y = r_sqr_validate)) + 
 	facet_wrap(~ symbol, scales = "free") +
 	theme_bw() +
-	geom_boxplot() +
+	geom_boxplot(color = 'black', fill = 'grey') +
 	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 	ggtitle(title) + 
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
 	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
-	theme(text = element_text(size = 8))
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
 
 print(p)
 
@@ -651,14 +653,16 @@ dev.off()
 
 title <- "Distributions of Trade Size Expectation (point) After Spread by Symbol and Target for Validation_1 Samples"
 
-p <- ggplot(data = working_data, aes(x = as.factor(target2), y = trade_mean_spreaded_validate, fill = as.factor(target2))) + 
+p <- ggplot(data = working_data, aes(x = as.factor(target2), y = trade_mean_spreaded_validate)) + 
 	facet_wrap(~ symbol, scales = "free") +
 	theme_bw() +
-	geom_boxplot() +
+	geom_boxplot(color = 'black', fill = 'grey') +
 	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 	ggtitle(title) + 
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
 	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
-	theme(text = element_text(size = 8))
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
 
 print(p)
 
@@ -675,14 +679,16 @@ dev.off()
 
 title <- "Distributions of Profit Minus Drawdown (point) After Spread by Symbol and Target for Validation_1 Samples"
 
-p <- ggplot(data = working_data, aes(x = as.factor(target2), y = pro_draw_validate, fill = as.factor(target2))) + 
+p <- ggplot(data = working_data, aes(x = as.factor(target2), y = pro_draw_validate)) + 
 	facet_wrap(~ symbol, scales = "free") +
 	theme_bw() +
-	geom_boxplot() +
+	geom_boxplot(color = 'black', fill = 'grey') +
 	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 	ggtitle(title) + 
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
 	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
-	theme(text = element_text(size = 8))
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
 
 print(p)
 
@@ -707,8 +713,10 @@ p <- ggplot(data = dat, aes(x = as.factor(target2), y = value, fill = as.factor(
 	geom_boxplot() +
 	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 	ggtitle(title) + 
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
 	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
-	theme(text = element_text(size = 8))
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
 
 print(p)
 
@@ -733,8 +741,10 @@ p <- ggplot(data = dat, aes(x = as.factor(target2), y = value, fill = as.factor(
 	geom_boxplot() +
 	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 	ggtitle(title) + 
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
 	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
-	theme(text = element_text(size = 8))
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
 
 print(p)
 
@@ -747,7 +757,7 @@ ggsave(filename = paste('analysis/', title, '.jpeg', sep = '')
 dev.off()
 
 
-#### comparison of distributions of Profit Minus Drawdown for validate
+#### comparison of distributions of Profit Minus Drawdown for CV vs. validate
 
 dat <- melt(working_data, id.vars = c('symbol', 'target2', 'models'), measure.vars = c("pro_draw_cv", "pro_draw_validate"))
 
@@ -759,8 +769,10 @@ p <- ggplot(data = dat, aes(x = as.factor(target2), y = value, fill = as.factor(
 	geom_boxplot() +
 	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 	ggtitle(title) + 
-	theme(plot.title = element_text(lineheight =.8, size = 11, face = "bold")) +
-	theme(text = element_text(size = 8))
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
+	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
 
 print(p)
 
@@ -777,19 +789,27 @@ dev.off()
 
 dat <- melt(working_data, id.vars = c('symbol', 'target2', 'models'), measure.vars = c("mae_mean_cv", "mae_mean_validate"))
 
-cor <- dat[, {cor(.SD[variable == "mae_mean_cv", value], .SD[variable == "mae_mean_validate", value])}, by = .(symbol, target2)]
+cor <- dat[, 
+	   {
+	   	cor(.SD[variable == "mae_mean_cv", value], .SD[variable == "mae_mean_validate", value])
+	   }
+	   , by = .(symbol, target2)
+	   ]
 
 title <- "Correlation of Abs. Err. Decr. Sample Statistics for CV and Validate Data by Symbol and Target for Validation_1 Samples"
 
 p <- ggplot(data = cor, aes(x = as.factor(target2), y = V1)) + 
-	facet_wrap(~ symbol, scales = 'free') +
+	facet_wrap(~ symbol) +
 	theme_bw() +
 	geom_bar(stat = "identity", fill = 'blue', colour = 'blue') +
 	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 	ggtitle(title) + 
 	ylab("Pearson's Correlation Coefficient") +
-	theme(plot.title = element_text(lineheight =.8, size = 11, face = "bold")) +
-	theme(text = element_text(size = 8))
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
+	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
 
 print(p)
 
@@ -806,19 +826,27 @@ dev.off()
 
 dat <- melt(working_data, id.vars = c('symbol', 'target2', 'models'), measure.vars = c("trade_mean_spreaded_cv", "trade_mean_spreaded_validate"))
 
-cor <- dat[, {cor(.SD[variable == "trade_mean_spreaded_cv", value], .SD[variable == "trade_mean_spreaded_validate", value])}, by = .(symbol, target2)]
+cor <- dat[, 
+	   {
+	   	cor(.SD[variable == "trade_mean_spreaded_cv", value], .SD[variable == "trade_mean_spreaded_validate", value])
+	   }
+	   
+	   , by = .(symbol, target2)
+	   ]
 
 title <- "Correlation of Trade Expectation (point) Sample Statistics for CV and Validate Data by Symbol and Target for Validation_1 Samples"
 
 p <- ggplot(data = cor, aes(x = as.factor(target2), y = V1)) + 
-	facet_wrap(~ symbol, scales = 'free') +
+	facet_wrap(~ symbol) +
 	theme_bw() +
 	geom_bar(stat = "identity", fill = 'blue', colour = 'blue') +
 	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 	ggtitle(title) + 
 	ylab("Pearson's Correlation Coefficient") +
-	theme(plot.title = element_text(lineheight =.8, size = 11, face = "bold")) +
-	theme(text = element_text(size = 8))
+	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
 
 print(p)
 
@@ -834,18 +862,20 @@ dev.off()
 #### Scatterplot with LM (alpha 0.01) of Trade Expectation (point)
 
 working_data[, {
-	title <- paste('Scatterplot with LM (alpha 0.01) of Trade Expectation (point) Sample Statistics for CV and Validate Data by Target for ', symbol, ' for Validation_1 Samples', sep = '')
+	title <- paste('Scatterplot with LM of Trade Expectation (point) Sample Statistics for CV and Validate Data by Target for ', symbol, ' for Validation_1 Samples', sep = '')
 	
 	p <- ggplot(data = .SD, aes(x = trade_mean_spreaded_cv, y = trade_mean_spreaded_validate)) + 
 		facet_wrap(~ target2, scales = 'free') +
 		theme_bw() +
 		geom_point(fill = 'black', colour = 'black', size = 1, alpha = 0.5) +
-		geom_smooth(method = 'lm', level = 0.99, linetype = 1, size = 0.5, colour = 'blue') +
+		geom_smooth(method = 'lm', level = 0.99, linetype = 1, size = 0.5) +
+		geom_smooth(method = 'lm', level = 0.999, linetype = 1, size = 0.5) +
+		geom_smooth(method = 'lm', level = 0.9999, linetype = 1, size = 0.5) +
 		geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 		geom_vline(aes(xintercept = 0), linetype = 2, colour = 'red', size = 1) +
 		ggtitle(title) + 
-		theme(plot.title = element_text(lineheight =.8, size = 11, face = "bold")) +
-		theme(text = element_text(size = 8))
+		theme(plot.title = element_text(lineheight =.8, size = 10, face = "bold")) +
+		theme(text = element_text(size = 7))
 	print(p)
 	ggsave(filename = paste('analysis/', title, '.jpeg', sep = '')
 	       , plot = last_plot()
@@ -867,12 +897,14 @@ working_data[, {
 		facet_wrap(~ target2, scales = 'free') +
 		theme_bw() +
 		geom_point(fill = 'black', colour = 'black', size = 1, alpha = 0.5) +
-		geom_smooth(method = 'lm', level = 0.99, linetype = 1, size = 0.5, colour = 'blue') +
+		geom_smooth(method = 'lm', level = 0.99, linetype = 1, size = 0.5) +
+		geom_smooth(method = 'lm', level = 0.999, linetype = 1, size = 0.5) +
+		geom_smooth(method = 'lm', level = 0.9999, linetype = 1, size = 0.5) +
 		geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
 		geom_vline(aes(xintercept = 0), linetype = 2, colour = 'red', size = 1) +
 		ggtitle(title) + 
 		theme(plot.title = element_text(lineheight =.8, size = 11, face = "bold")) +
-		theme(text = element_text(size = 8))
+		theme(text = element_text(size = 7))
 	print(p)
 	ggsave(filename = paste('analysis/', title, '.jpeg', sep = '')
 	       , plot = last_plot()
@@ -905,7 +937,7 @@ top_counts[,
 		ggtitle(title) + 
 		ylab("Frequency of Use") +
 		theme(plot.title = element_text(lineheight =.8, size = 11, face = "bold")) +
-		theme(text = element_text(size = 8), 
+		theme(text = element_text(size = 7), 
 		      axis.text.x = element_text(angle = 45, vjust = 1))
 	
 	print(p)
@@ -940,7 +972,7 @@ top_counts[,
 	   		ggtitle(title) + 
 	   		ylab("Frequency of Use") +
 	   		theme(plot.title = element_text(lineheight =.8, size = 11, face = "bold")) +
-	   		theme(text = element_text(size = 8), 
+	   		theme(text = element_text(size = 7), 
 	   		      axis.text.x = element_text(angle = 45, vjust = 1))
 	   	
 	   	print(p)
@@ -953,6 +985,13 @@ top_counts[,
 	   	dev.off()
 	   }
 	   , by = target2]
+
+
+
+
+
+
+
 
 
 ##################
@@ -983,9 +1022,11 @@ rm(all_dat_train)
 
 predictions[, model_avg:= rowMeans(.SD), .SDcols = c(1:99)]
 
+quantile_threshold <- 0.9
+
 gray_zone_thresholds <- c(
-	quantile(predictions[, model_avg], 0.5 - 0.9 / 2)
-	, quantile(predictions[, model_avg], 0.5 + 0.9 / 2))
+	quantile(predictions[, model_avg], 0.5 - quantile_threshold / 2)
+	, quantile(predictions[, model_avg], 0.5 + quantile_threshold / 2))
 
 
 ### validation data
