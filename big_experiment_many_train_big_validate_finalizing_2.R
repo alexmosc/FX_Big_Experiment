@@ -504,11 +504,9 @@ save(gbm_model_list, file = paste0('big_experiment/Large_Study_4part/gbm_model_l
 
 
 
-########################
-##################
-############
-#########
+
 ### build trading charts and detaild stats for validation
+#########
 
 setwd('C:/R_study/fx/big_experiment/')
 
@@ -577,7 +575,6 @@ write.table(all_results_gbm_df, file = 'Large_Study_3part/all_results_gbm_df.csv
 
 
 ########################### Charts
-#####################
 
 setwd('C:/R_study/fx/big_experiment/')
 
@@ -989,15 +986,17 @@ top_counts[,
 	   , by = target2]
 
 
+#########
 
 
 
 
 
 
-######################
-##################
+
+
 ############### Trade Sequence Modelling for Best Validation_1 Models
+##################
 
 setwd('C:/R_study/fx/big_experiment/')
 
@@ -1021,10 +1020,10 @@ working_data <- all_results_gbm_df
 load(file = 'Data/many_train_samples.R')
 
 ### define model
-model_symbol <- 'gbpusd'
+model_symbol <- 'eurusd'
 model_target <- 181
 model_target_name <- paste0('future_lag_', model_target)
-model_spread <- 0.00014
+model_spread <- 0.0001
 nseq <- 1000
 modeled_trade_number <- round(5827000/3/2/model_target)
 
