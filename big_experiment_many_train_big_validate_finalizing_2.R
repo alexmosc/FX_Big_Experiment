@@ -1073,8 +1073,10 @@ validate_predictions[, trades:= future_lag_181 * sign(model_avg)]
 validate_trades <- validate_predictions[select == 1, trades]
 random_trades <- validate_predictions[, trades]
 
+
 ############ build sequence of trades
-nseq <- 50
+
+nseq <- 1000
 
 modeled_trade_number <- round(5827000/3/2/model_target)
 
@@ -1137,6 +1139,16 @@ all_sequences <- rbind(validate_sequence_dt
 
 all_sequences[, model_type:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = modeled_trade_number * nseq)]
 
+median_seq <- all_sequences[, median(V1), by = .(model_type, step)]
+low_quant_seq <- all_sequences[, quantile(V1, 0.01), by = .(model_type, step)]
+upp_quant_seq <- all_sequences[, quantile(V1, 0.99), by = .(model_type, step)]
+
+trade_sequence_summary <- cbind(median_seq
+				, low_quant_seq
+				, upp_quant_seq)
+
+colnames(trade_sequence_summary) <- c("model_type", "step", 'median', "model_type", "step", "low_quantile", "model_type", "step", "upp_quantile")
+
 last_distr <- all_sequences[, V1[.N], by = .(model_type, sample)]
 last_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = nseq)]
 
@@ -1147,40 +1159,224 @@ rf_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = ns
 
 ############ plot sequences
 
-p1 <- ggplot(data = all_sequences, aes(x = step, y = V1, group = sample, color = model_type)) +
-	geom_line(size = 2, alpha = 0.1) +
-	ggtitle('Simulated Cumulative Trading Outcomes') +
+p1 <- ggplot(data = trade_sequence_summary, aes(x = step, y = median, color = model_type)) +
+	geom_ribbon(aes(ymin = median - low_quantile, ymax = median + upp_quantile, fill = model_type, alpha = 0.1)) +
+	geom_line(size = 2) +
+	scale_y_continuous(limits = c(-2, 2)) +
+	ggtitle('Simulated Cumulative Trading Outcomes (Median, 01-Quantile, and 99-Quantile)') +
 	ylab("Cumulative Points") +
 	xlab("Trade Sequence") +
-	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
-	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
-	theme(axis.title.y = element_text(lineheight =.8, size = 10, face = "bold")) +
-	theme(text = element_text(size = 7))
+	theme(plot.title = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(text = element_text(size = 12))
 	      
 p2 <- ggplot(data = last_distr, aes(x = V1, group = as.factor(sample), fill = as.factor(sample), color = as.factor(sample))) +
 	geom_density(alpha = 0.3) + 
 	coord_flip() +
-	scale_x_continuous(limits = c(min(last_distr$V1), max(last_distr$V1))) +
+	scale_x_continuous(limits = c(-2, 2)) +
 	ggtitle('Cumulative Profit (Point) Density') +
 	ylab("Density") +
 	xlab("Cumulative Points") +
-	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
-	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
-	theme(axis.title.y = element_text(lineheight =.8, size = 10, face = "bold")) +
-	theme(text = element_text(size = 7))
+	theme(plot.title = element_text(lineheight =.8, size = 16, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(text = element_text(size = 12))
 	
 p3 <- ggplot(data = rf_distr, aes(x = V1, fill = sample, color = sample)) +
 	geom_density(alpha = 0.3) +
-	facet_wrap(~ sample, scales = 'free', ncol = 1) +
+	facet_wrap(~ sample, scales = 'free_y', ncol = 1) +
 	ggtitle('Recovery Factor Density') +
 	ylab("Density") +
 	xlab("Recovery Factor") +
-	theme(plot.title = element_text(lineheight =.8, size = 12, face = "bold")) +
-	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
-	theme(axis.title.y = element_text(lineheight =.8, size = 10, face = "bold")) +
-	theme(text = element_text(size = 7))
+	theme(plot.title = element_text(lineheight =.8, size = 16, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(text = element_text(size = 12))
+
+title <- 'Manifold Representation of Trade Sequence Simulation with All-Model Ensemble'
+
+jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
+     , width = 2000, height = 800, units = "px")
 	
 grid.arrange(p1, p2, p3, ncol = 3)
 
+dev.off()
 
+############## optimize ensemble
+
+ensembles_rf_median <- numeric()
+
+for (ii in 1:99){
+	
+	predictions[, ensemble_tune:= rowMeans(.SD), .SDcols = c(1:ii)]
+
+	gray_zone_thresholds <- c(
+		quantile(predictions[, ensemble_tune], 0.5 - quantile_threshold / 2)
+		, quantile(predictions[, ensemble_tune], 0.5 + quantile_threshold / 2))
+	
+	validate_predictions[, ensemble_tune:= rowMeans(.SD), .SDcols = c(2:(ii+1))]
+	validate_predictions[, select:= ifelse(ensemble_tune < gray_zone_thresholds[1] | ensemble_tune > gray_zone_thresholds[2], 1, 0)]
+	validate_predictions[, trades:= future_lag_181 * sign(ensemble_tune)]
+	validate_trades <- validate_predictions[select == 1, trades]
+	
+	validate_sequence <- list()
+	for (i in 1:nseq){
+		validate_sequence[[i]] <- cumsum(validate_trades[validate_indexes[[i]]] - 0.00014)
+	}
+	
+	validate_sequence_dt <- as.data.table(do.call(c, validate_sequence))
+	validate_sequence_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
+	validate_sequence_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
+	
+	rf_distr <- validate_sequence_dt[, V1[.N] / maxdrawdown(V1)[[1]], by = .(sample)]
+	
+	ensembles_rf_median[ii] <- median(rf_distr[, V1])
+	
+}
+
+title = 'Median Recovery Factor on Tuned Ensemble for 1000 Simulated Trade Sequences'
+
+jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
+       , width = 800, height = 600, units = "px")
+
+plot(ensembles_rf_median, type = 's', main = title,
+     xlab = "Number of Models Added in Descending Order Based on Cross-Validation Trade Expectation Value", ylab = "Median RF")
+
+dev.off()
+
+
+###################### find best emsemble
+#################
+
+model_number <- which.max(ensembles_rf_median)
+
+predictions[, ensemble_tune:= rowMeans(.SD), .SDcols = c(1:model_number)]
+
+gray_zone_thresholds <- c(
+	quantile(predictions[, ensemble_tune], 0.5 - quantile_threshold / 2)
+	, quantile(predictions[, ensemble_tune], 0.5 + quantile_threshold / 2))
+
+validate_predictions[, ensemble_tune:= rowMeans(.SD), .SDcols = c(2:(model_number + 1))]
+validate_predictions[, select:= ifelse(ensemble_tune < gray_zone_thresholds[1] | ensemble_tune > gray_zone_thresholds[2], 1, 0)]
+validate_predictions[, trades:= future_lag_181 * sign(ensemble_tune)]
+validate_trades <- validate_predictions[select == 1, trades]
+
+############ build sequence of trades
+
+validate_sequence <- list()
+for (i in 1:nseq){
+	validate_sequence[[i]] <- cumsum(validate_trades[validate_indexes[[i]]] - 0.00014)
+}
+
+validate_sequence_dt <- as.data.table(do.call(c, validate_sequence))
+validate_sequence_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
+validate_sequence_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
+
+### up
+validate_indexes <- list()
+for (i in 1:nseq){
+	n <- sample(round(length(random_trades) / 2), modeled_trade_number, replace = FALSE)
+	validate_indexes[[i]] <- sort(n, decreasing = F)
+}
+
+validate_sequence_up <- list()
+for (i in 1:nseq){
+	validate_sequence_up[[i]] <- cumsum(random_trades[validate_indexes[[i]]] - 0.00014)
+}
+
+validate_sequence_up_dt <- as.data.table(do.call(c, validate_sequence_up))
+validate_sequence_up_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
+validate_sequence_up_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
+
+### down
+validate_sequence_down <- list()
+for (i in 1:nseq){
+	validate_sequence_down[[i]] <- cumsum(-random_trades[validate_indexes[[i]]] - 0.00014)
+}
+
+validate_sequence_down_dt <- as.data.table(do.call(c, validate_sequence_down))
+validate_sequence_down_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
+validate_sequence_down_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
+
+### rand
+validate_sequence_rand <- list()
+for (i in 1:nseq){
+	validate_sequence_rand[[i]] <- cumsum(random_trades[validate_indexes[[i]]] * ifelse(runif(1, -1, 1) > 0, 1, -1) - 0.00014)
+}
+
+validate_sequence_rand_dt <- as.data.table(do.call(c, validate_sequence_rand))
+validate_sequence_rand_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
+validate_sequence_rand_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
+
+all_sequences <- rbind(validate_sequence_dt
+		       , validate_sequence_up_dt
+		       , validate_sequence_down_dt
+		       , validate_sequence_rand_dt)
+
+all_sequences[, model_type:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = modeled_trade_number * nseq)]
+
+median_seq <- all_sequences[, median(V1), by = .(model_type, step)]
+low_quant_seq <- all_sequences[, quantile(V1, 0.01), by = .(model_type, step)]
+upp_quant_seq <- all_sequences[, quantile(V1, 0.99), by = .(model_type, step)]
+
+trade_sequence_summary <- cbind(median_seq
+				, low_quant_seq[, V1]
+				, upp_quant_seq[, V1])
+
+colnames(trade_sequence_summary) <- c("model_type", "step", 'median', "low_quantile", "upp_quantile")
+
+last_distr <- all_sequences[, V1[.N], by = .(model_type, sample)]
+last_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = nseq)]
+
+rf_distr <- all_sequences[, V1[.N] / maxdrawdown(V1)[[1]], by = .(model_type, sample)]
+rf_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = nseq)]
+
+
+
+############ plot sequences
+
+p1 <- ggplot(data = trade_sequence_summary, aes(x = step, y = median, color = model_type)) +
+	geom_ribbon(aes(ymin = median - low_quantile, ymax = median + upp_quantile, fill = model_type, alpha = 0.1)) +
+	geom_line(size = 2) +
+	scale_y_continuous(limits = c(-2, 2)) +
+	ggtitle('Simulated Cumulative Trading Outcomes (Median, 01-Quantile, and 99-Quantile)') +
+	ylab("Cumulative Points") +
+	xlab("Trade Sequence") +
+	theme(plot.title = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(text = element_text(size = 12))
+
+p2 <- ggplot(data = last_distr, aes(x = V1, group = as.factor(sample), fill = as.factor(sample), color = as.factor(sample))) +
+	geom_density(alpha = 0.3) + 
+	coord_flip() +
+	scale_x_continuous(limits = c(-2, 2)) +
+	ggtitle('Cumulative Profit (Point) Density') +
+	ylab("Density") +
+	xlab("Cumulative Points") +
+	theme(plot.title = element_text(lineheight =.8, size = 16, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(text = element_text(size = 12))
+
+p3 <- ggplot(data = rf_distr, aes(x = V1, fill = sample, color = sample)) +
+	geom_density(alpha = 0.3) +
+	facet_wrap(~ sample, scales = 'free_y', ncol = 1) +
+	ggtitle('Recovery Factor Density') +
+	ylab("Density") +
+	xlab("Recovery Factor") +
+	theme(plot.title = element_text(lineheight =.8, size = 16, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
+	theme(text = element_text(size = 12))
+
+title <- 'Manifold Representation of Trade Sequence Simulation with Tuned Model Ensemble'
+
+jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
+     , width = 2000, height = 800, units = "px")
+
+plot(grid.arrange(p1, p2, p3, ncol = 3))
+
+dev.off()
 
