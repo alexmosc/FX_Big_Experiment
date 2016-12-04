@@ -1,10 +1,12 @@
 ##############
 ##################
 ######################
-######################### MOdelling with GBM
+######################### Modelling with GBM
 ######################
 ##################
 ##############
+
+##### 
 
 setwd('C:/R_study/fx/big_experiment/')
 
@@ -494,7 +496,7 @@ for (train_subset in 1:length(many_train_samples)){
 
 save(gbm_model_list, file = paste0('big_experiment/Large_Study_4part/gbm_model_list_gauss_all_symbols_', train_subset%/%10+1, '.R'))
 
-
+##### 
 
 
 
@@ -1020,7 +1022,7 @@ load(file = 'Data/many_train_samples.R')
 
 ### define model
 model_symbol <- 'gbpusd'
-model_target <- 181
+model_target <- 724
 model_target_name <- paste0('future_lag_', model_target)
 model_spread <- 0.00014
 nseq <- 1000
@@ -1100,15 +1102,15 @@ validate_sequence_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
 validate_sequence_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 
 ### up
-validate_indexes <- list()
+validate_indexes_randoms <- list()
 for (i in 1:nseq){
 	n <- sample(round(length(random_trades) / 2), modeled_trade_number, replace = FALSE)
-	validate_indexes[[i]] <- sort(n, decreasing = F)
+	validate_indexes_randoms[[i]] <- sort(n, decreasing = F)
 }
 
 validate_sequence_up <- list()
 for (i in 1:nseq){
-	validate_sequence_up[[i]] <- cumsum(random_trades[validate_indexes[[i]]] - model_spread)
+	validate_sequence_up[[i]] <- cumsum(random_trades[validate_indexes_randoms[[i]]] - model_spread)
 }
 
 validate_sequence_up_dt <- as.data.table(do.call(c, validate_sequence_up))
@@ -1118,7 +1120,7 @@ validate_sequence_up_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 ### down
 validate_sequence_down <- list()
 for (i in 1:nseq){
-	validate_sequence_down[[i]] <- cumsum(-random_trades[validate_indexes[[i]]] - model_spread)
+	validate_sequence_down[[i]] <- cumsum(-random_trades[validate_indexes_randoms[[i]]] - model_spread)
 }
 
 validate_sequence_down_dt <- as.data.table(do.call(c, validate_sequence_down))
@@ -1128,7 +1130,7 @@ validate_sequence_down_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 ### rand
 validate_sequence_rand <- list()
 for (i in 1:nseq){
-	validate_sequence_rand[[i]] <- cumsum(random_trades[validate_indexes[[i]]] * ifelse(runif(1, -1, 1) > 0, 1, -1) - model_spread)
+	validate_sequence_rand[[i]] <- cumsum(random_trades[validate_indexes_randoms[[i]]] * ifelse(runif(1, -1, 1) > 0, 1, -1) - model_spread)
 }
 
 validate_sequence_rand_dt <- as.data.table(do.call(c, validate_sequence_rand))
@@ -1295,15 +1297,15 @@ validate_sequence_dt[, step:= rep(1:modeled_trade_number, times = nseq)]
 validate_sequence_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 
 ### up
-validate_indexes <- list()
+validate_indexes_randoms <- list()
 for (i in 1:nseq){
 	n <- sample(round(length(random_trades) / 2), modeled_trade_number, replace = FALSE)
-	validate_indexes[[i]] <- sort(n, decreasing = F)
+	validate_indexes_randoms[[i]] <- sort(n, decreasing = F)
 }
 
 validate_sequence_up <- list()
 for (i in 1:nseq){
-	validate_sequence_up[[i]] <- cumsum(random_trades[validate_indexes[[i]]] - model_spread)
+	validate_sequence_up[[i]] <- cumsum(random_trades[validate_indexes_randoms[[i]]] - model_spread)
 }
 
 validate_sequence_up_dt <- as.data.table(do.call(c, validate_sequence_up))
@@ -1313,7 +1315,7 @@ validate_sequence_up_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 ### down
 validate_sequence_down <- list()
 for (i in 1:nseq){
-	validate_sequence_down[[i]] <- cumsum(-random_trades[validate_indexes[[i]]] - model_spread)
+	validate_sequence_down[[i]] <- cumsum(-random_trades[validate_indexes_randoms[[i]]] - model_spread)
 }
 
 validate_sequence_down_dt <- as.data.table(do.call(c, validate_sequence_down))
@@ -1323,7 +1325,7 @@ validate_sequence_down_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 ### rand
 validate_sequence_rand <- list()
 for (i in 1:nseq){
-	validate_sequence_rand[[i]] <- cumsum(random_trades[validate_indexes[[i]]] * ifelse(runif(1, -1, 1) > 0, 1, -1) - model_spread)
+	validate_sequence_rand[[i]] <- cumsum(random_trades[validate_indexes_randoms[[i]]] * ifelse(runif(1, -1, 1) > 0, 1, -1) - model_spread)
 }
 
 validate_sequence_rand_dt <- as.data.table(do.call(c, validate_sequence_rand))
