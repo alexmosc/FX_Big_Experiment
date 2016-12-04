@@ -1047,13 +1047,13 @@ all_dat_train[, (paste('model_output_', models, sep = '')):= lapply(models, func
 												, newdata = .SD[, 1:114, with = F]
 												, n.trees = all_models_gbm_list[[x]]$n.trees)))]
 
-predictions <- all_dat_train[, 133:231, with = F]
+predictions <- all_dat_train[, 133:(132+length(models)), with = F]
 
 rm(all_dat_train)
 
 gc()
 
-predictions[, model_avg:= rowMeans(.SD), .SDcols = c(1:99)]
+predictions[, model_avg:= rowMeans(.SD), .SDcols = c(1:length(models))]
 
 quantile_threshold <- 0.9
 
@@ -1078,7 +1078,7 @@ gc()
 
 validate_predictions <- big_dat_test[, c(model_target_name, paste0('model_output_', models)), with = F]
 rm(big_dat_test)
-validate_predictions[, model_avg:= rowMeans(.SD), .SDcols = c(2:100)]
+validate_predictions[, model_avg:= rowMeans(.SD), .SDcols = c(2:(1+length(models)))]
 validate_predictions[, select:= ifelse(model_avg < gray_zone_thresholds[1] | model_avg > gray_zone_thresholds[2], 1, 0)]
 validate_predictions[, trades:= get(model_target_name) * sign(model_avg)]
 validate_trades <- validate_predictions[select == 1, trades]
@@ -1217,7 +1217,7 @@ dev.off()
 
 ensembles_rf_median <- numeric()
 
-for (ii in 1:99){
+for (ii in 1:length(models)){
 	
 	predictions[, ensemble_tune:= rowMeans(.SD), .SDcols = c(1:ii)]
 
@@ -1233,7 +1233,7 @@ for (ii in 1:99){
 	# indexes
 	validate_indexes <- list()
 	for (i in 1:nseq){
-		n <- sample(round(length(validate_trades) / 2), modeled_trade_number, replace = FALSE)
+		n <- sample(round(length(validate_trades) / 2), modeled_trade_number * 0.5, replace = FALSE)
 		validate_indexes[[i]] <- sort(n, decreasing = F)
 	}
 	
