@@ -1073,7 +1073,7 @@ big_dat_test[, (paste('model_output_', models, sep = '')):= lapply(models, funct
 rm(all_models_gbm_list)
 gc()
 
-validate_predictions <- big_dat_test[, c(get(model_target_name), 133:231), with = F]
+validate_predictions <- big_dat_test[, c(model_target_name, paste0('model_output_', models)), with = F]
 rm(big_dat_test)
 validate_predictions[, model_avg:= rowMeans(.SD), .SDcols = c(2:100)]
 validate_predictions[, select:= ifelse(model_avg < gray_zone_thresholds[1] | model_avg > gray_zone_thresholds[2], 1, 0)]
@@ -1149,10 +1149,10 @@ low_quant_seq <- all_sequences[, quantile(V1, 0.01), by = .(model_type, step)]
 upp_quant_seq <- all_sequences[, quantile(V1, 0.99), by = .(model_type, step)]
 
 trade_sequence_summary <- cbind(median_seq
-				, low_quant_seq
-				, upp_quant_seq)
+				, low_quant_seq[, V1]
+				, upp_quant_seq[, V1])
 
-colnames(trade_sequence_summary) <- c("model_type", "step", 'median', "model_type", "step", "low_quantile", "model_type", "step", "upp_quantile")
+colnames(trade_sequence_summary) <- c("model_type", "step", 'median', "low_quantile", "upp_quantile")
 
 last_distr <- all_sequences[, V1[.N], by = .(model_type, sample)]
 last_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = nseq)]
@@ -1165,7 +1165,7 @@ rf_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = ns
 ############ plot sequences
 
 p1 <- ggplot(data = trade_sequence_summary, aes(x = step, y = median, color = model_type)) +
-	geom_ribbon(aes(ymin = median - low_quantile, ymax = median + upp_quantile, fill = model_type, alpha = 0.1)) +
+	geom_ribbon(aes(ymin = low_quantile, ymax = upp_quantile, fill = model_type, alpha = 0.1)) +
 	geom_line(size = 2) +
 	scale_y_continuous(limits = c(-2, 2)) +
 	ggtitle('Simulated Cumulative Trading Outcomes (Median, 01-Quantile, and 99-Quantile)') +
@@ -1201,7 +1201,7 @@ p3 <- ggplot(data = rf_distr, aes(x = V1, fill = sample, color = sample)) +
 	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
 	theme(text = element_text(size = 12))
 
-title <- paste0('Manifold Representation of Trade Sequence Simulation with All-Model Ensemble, for ', model_symbol, ', and target ', model_target)
+title <- paste0('Manifold Representation of Trade Sequence Simulation with All-Model Ensemble, for ', model_symbol, ', and target ', model_target_name)
 
 jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
      , width = 2000, height = 800, units = "px")
@@ -1224,7 +1224,7 @@ for (ii in 1:99){
 	
 	validate_predictions[, ensemble_tune:= rowMeans(.SD), .SDcols = c(2:(ii+1))]
 	validate_predictions[, select:= ifelse(ensemble_tune < gray_zone_thresholds[1] | ensemble_tune > gray_zone_thresholds[2], 1, 0)]
-	validate_predictions[, trades:= future_lag_181 * sign(ensemble_tune)]
+	validate_predictions[, trades:= get(model_target_name) * sign(ensemble_tune)]
 	validate_trades <- validate_predictions[select == 1, trades]
 	
 	# indexes
@@ -1250,7 +1250,7 @@ for (ii in 1:99){
 	
 }
 
-title = paste0('Median Recovery Factor on Tuned Ensemble for 1000 Simulated Trade Sequences for ', model_symbol, ', and target ', model_target)
+title = paste0('Median Recovery Factor on Tuned Ensemble for 1000 Simulated Trade Sequences for ', model_symbol, ', and target ', model_target_name)
 
 jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
        , width = 800, height = 600, units = "px")
@@ -1273,7 +1273,7 @@ gray_zone_thresholds <- c(
 
 validate_predictions[, ensemble_tune:= rowMeans(.SD), .SDcols = c(2:(model_number + 1))]
 validate_predictions[, select:= ifelse(ensemble_tune < gray_zone_thresholds[1] | ensemble_tune > gray_zone_thresholds[2], 1, 0)]
-validate_predictions[, trades:= future_lag_181 * sign(ensemble_tune)]
+validate_predictions[, trades:= get(model_target_name) * sign(ensemble_tune)]
 validate_trades <- validate_predictions[select == 1, trades]
 random_trades <- validate_predictions[, trades]
 
@@ -1360,7 +1360,7 @@ rf_distr[, sample:= rep(c('model', 'buy-only', 'sell-only', 'random'), each = ns
 ############ plot sequences
 
 p1 <- ggplot(data = trade_sequence_summary, aes(x = step, y = median, color = model_type)) +
-	geom_ribbon(aes(ymin = median - low_quantile, ymax = median + upp_quantile, fill = model_type, alpha = 0.1)) +
+	geom_ribbon(aes(ymin = low_quantile, ymax = upp_quantile, fill = model_type, alpha = 0.1)) +
 	geom_line(size = 2) +
 	scale_y_continuous(limits = c(-2, 2)) +
 	ggtitle('Simulated Cumulative Trading Outcomes (Median, 01-Quantile, and 99-Quantile)') +
@@ -1396,7 +1396,7 @@ p3 <- ggplot(data = rf_distr, aes(x = V1, fill = sample, color = sample)) +
 	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
 	theme(text = element_text(size = 12))
 
-title <- paste0('Manifold Representation of Trade Sequence Simulation with Tuned Model Ensemble, for ', model_symbol, ', and target ', model_target)
+title <- paste0('Manifold Representation of Trade Sequence Simulation with Tuned Model Ensemble, for ', model_symbol, ', and target ', model_target_name)
 
 jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
      , width = 2000, height = 800, units = "px")
