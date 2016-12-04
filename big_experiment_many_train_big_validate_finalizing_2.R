@@ -1022,7 +1022,7 @@ load(file = 'Data/many_train_samples.R')
 
 ### define model
 model_symbol <- 'gbpusd'
-model_target <- 724
+model_target <- 181
 model_target_name <- paste0('future_lag_', model_target)
 model_spread <- 0.00014
 nseq <- 1000
