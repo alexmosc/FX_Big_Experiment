@@ -1018,8 +1018,14 @@ working_data <- all_results_gbm_df
 
 load(file = 'Data/many_train_samples.R')
 
+### define model
 model_symbol <- 'gbpusd'
 model_target <- 181
+model_target_name <- paste0('future_lag_', model_target)
+model_spread <- 0.00014
+nseq <- 1000
+modeled_trade_number <- round(5827000/3/2/model_target)
+
 
 model_set_00 <- working_data[symbol == model_symbol & target2 == model_target, c(5, 20:38), with = F]
 setorder(model_set_00, - trade_mean_spreaded_cv)
@@ -1065,31 +1071,28 @@ big_dat_test[, (paste('model_output_', models, sep = '')):= lapply(models, funct
 rm(all_models_gbm_list)
 gc()
 
-validate_predictions <- big_dat_test[, c(128, 133:231), with = F]
+validate_predictions <- big_dat_test[, c(get(model_target_name), 133:231), with = F]
 rm(big_dat_test)
 validate_predictions[, model_avg:= rowMeans(.SD), .SDcols = c(2:100)]
 validate_predictions[, select:= ifelse(model_avg < gray_zone_thresholds[1] | model_avg > gray_zone_thresholds[2], 1, 0)]
-validate_predictions[, trades:= future_lag_181 * sign(model_avg)]
+validate_predictions[, trades:= get(model_target_name) * sign(model_avg)]
 validate_trades <- validate_predictions[select == 1, trades]
 random_trades <- validate_predictions[, trades]
 
 
 ############ build sequence of trades
 
-nseq <- 1000
-
-modeled_trade_number <- round(5827000/3/2/model_target)
-
-#
+# indexes
 validate_indexes <- list()
 for (i in 1:nseq){
 	n <- sample(round(length(validate_trades) / 2), modeled_trade_number, replace = FALSE)
 	validate_indexes[[i]] <- sort(n, decreasing = F)
 }
 
+# sequences
 validate_sequence <- list()
 for (i in 1:nseq){
-	validate_sequence[[i]] <- cumsum(validate_trades[validate_indexes[[i]]] - 0.00014)
+	validate_sequence[[i]] <- cumsum(validate_trades[validate_indexes[[i]]] - model_spread)
 }
 
 validate_sequence_dt <- as.data.table(do.call(c, validate_sequence))
@@ -1105,7 +1108,7 @@ for (i in 1:nseq){
 
 validate_sequence_up <- list()
 for (i in 1:nseq){
-	validate_sequence_up[[i]] <- cumsum(random_trades[validate_indexes[[i]]] - 0.00014)
+	validate_sequence_up[[i]] <- cumsum(random_trades[validate_indexes[[i]]] - model_spread)
 }
 
 validate_sequence_up_dt <- as.data.table(do.call(c, validate_sequence_up))
@@ -1115,7 +1118,7 @@ validate_sequence_up_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 ### down
 validate_sequence_down <- list()
 for (i in 1:nseq){
-	validate_sequence_down[[i]] <- cumsum(-random_trades[validate_indexes[[i]]] - 0.00014)
+	validate_sequence_down[[i]] <- cumsum(-random_trades[validate_indexes[[i]]] - model_spread)
 }
 
 validate_sequence_down_dt <- as.data.table(do.call(c, validate_sequence_down))
@@ -1125,7 +1128,7 @@ validate_sequence_down_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 ### rand
 validate_sequence_rand <- list()
 for (i in 1:nseq){
-	validate_sequence_rand[[i]] <- cumsum(random_trades[validate_indexes[[i]]] * ifelse(runif(1, -1, 1) > 0, 1, -1) - 0.00014)
+	validate_sequence_rand[[i]] <- cumsum(random_trades[validate_indexes[[i]]] * ifelse(runif(1, -1, 1) > 0, 1, -1) - model_spread)
 }
 
 validate_sequence_rand_dt <- as.data.table(do.call(c, validate_sequence_rand))
@@ -1189,12 +1192,14 @@ p3 <- ggplot(data = rf_distr, aes(x = V1, fill = sample, color = sample)) +
 	ggtitle('Recovery Factor Density') +
 	ylab("Density") +
 	xlab("Recovery Factor") +
+	geom_vline(xintercept = median(rf_distr[sample == 'model', V1]), size = 1, linetype = 2, colour = 'red') +
+	annotate('text', x = 5, y = 0.1, label = paste0("Model's Median RF = ", round(median(rf_distr[sample == 'model', V1]), 2))) +
 	theme(plot.title = element_text(lineheight =.8, size = 16, face = "bold")) +
 	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
 	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
 	theme(text = element_text(size = 12))
 
-title <- 'Manifold Representation of Trade Sequence Simulation with All-Model Ensemble'
+title <- paste0('Manifold Representation of Trade Sequence Simulation with All-Model Ensemble, for ', model_symbol, ', and target ', model_target)
 
 jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
      , width = 2000, height = 800, units = "px")
@@ -1220,6 +1225,14 @@ for (ii in 1:99){
 	validate_predictions[, trades:= future_lag_181 * sign(ensemble_tune)]
 	validate_trades <- validate_predictions[select == 1, trades]
 	
+	# indexes
+	validate_indexes <- list()
+	for (i in 1:nseq){
+		n <- sample(round(length(validate_trades) / 2), modeled_trade_number, replace = FALSE)
+		validate_indexes[[i]] <- sort(n, decreasing = F)
+	}
+	
+	# sequences
 	validate_sequence <- list()
 	for (i in 1:nseq){
 		validate_sequence[[i]] <- cumsum(validate_trades[validate_indexes[[i]]] - 0.00014)
@@ -1235,13 +1248,12 @@ for (ii in 1:99){
 	
 }
 
-title = 'Median Recovery Factor on Tuned Ensemble for 1000 Simulated Trade Sequences'
+title = paste0('Median Recovery Factor on Tuned Ensemble for 1000 Simulated Trade Sequences for ', model_symbol, ', and target ', model_target)
 
 jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
        , width = 800, height = 600, units = "px")
 
-plot(ensembles_rf_median, type = 's', main = title,
-     xlab = "Number of Models Added in Descending Order Based on Cross-Validation Trade Expectation Value", ylab = "Median RF")
+plot(ensembles_rf_median, type = 's', main = title, xlab = "Number of Models Added in Descending Order Based on Cross-Validation Trade Expectation Value", ylab = "Median RF")
 
 dev.off()
 
@@ -1261,12 +1273,21 @@ validate_predictions[, ensemble_tune:= rowMeans(.SD), .SDcols = c(2:(model_numbe
 validate_predictions[, select:= ifelse(ensemble_tune < gray_zone_thresholds[1] | ensemble_tune > gray_zone_thresholds[2], 1, 0)]
 validate_predictions[, trades:= future_lag_181 * sign(ensemble_tune)]
 validate_trades <- validate_predictions[select == 1, trades]
+random_trades <- validate_predictions[, trades]
 
 ############ build sequence of trades
 
+# indexes
+validate_indexes <- list()
+for (i in 1:nseq){
+	n <- sample(round(length(validate_trades) / 2), modeled_trade_number, replace = FALSE)
+	validate_indexes[[i]] <- sort(n, decreasing = F)
+}
+
+# sequences
 validate_sequence <- list()
 for (i in 1:nseq){
-	validate_sequence[[i]] <- cumsum(validate_trades[validate_indexes[[i]]] - 0.00014)
+	validate_sequence[[i]] <- cumsum(validate_trades[validate_indexes[[i]]] - model_spread)
 }
 
 validate_sequence_dt <- as.data.table(do.call(c, validate_sequence))
@@ -1282,7 +1303,7 @@ for (i in 1:nseq){
 
 validate_sequence_up <- list()
 for (i in 1:nseq){
-	validate_sequence_up[[i]] <- cumsum(random_trades[validate_indexes[[i]]] - 0.00014)
+	validate_sequence_up[[i]] <- cumsum(random_trades[validate_indexes[[i]]] - model_spread)
 }
 
 validate_sequence_up_dt <- as.data.table(do.call(c, validate_sequence_up))
@@ -1292,7 +1313,7 @@ validate_sequence_up_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 ### down
 validate_sequence_down <- list()
 for (i in 1:nseq){
-	validate_sequence_down[[i]] <- cumsum(-random_trades[validate_indexes[[i]]] - 0.00014)
+	validate_sequence_down[[i]] <- cumsum(-random_trades[validate_indexes[[i]]] - model_spread)
 }
 
 validate_sequence_down_dt <- as.data.table(do.call(c, validate_sequence_down))
@@ -1302,7 +1323,7 @@ validate_sequence_down_dt[, sample:= rep(1:nseq, each = modeled_trade_number)]
 ### rand
 validate_sequence_rand <- list()
 for (i in 1:nseq){
-	validate_sequence_rand[[i]] <- cumsum(random_trades[validate_indexes[[i]]] * ifelse(runif(1, -1, 1) > 0, 1, -1) - 0.00014)
+	validate_sequence_rand[[i]] <- cumsum(random_trades[validate_indexes[[i]]] * ifelse(runif(1, -1, 1) > 0, 1, -1) - model_spread)
 }
 
 validate_sequence_rand_dt <- as.data.table(do.call(c, validate_sequence_rand))
@@ -1366,12 +1387,14 @@ p3 <- ggplot(data = rf_distr, aes(x = V1, fill = sample, color = sample)) +
 	ggtitle('Recovery Factor Density') +
 	ylab("Density") +
 	xlab("Recovery Factor") +
+	geom_vline(xintercept = median(rf_distr[sample == 'model', V1]), size = 1, linetype = 2, colour = 'red') +
+	annotate('text', x = 5, y = 0.1, label = paste0("Model's Median RF = ", round(median(rf_distr[sample == 'model', V1]), 2))) +
 	theme(plot.title = element_text(lineheight =.8, size = 16, face = "bold")) +
 	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
 	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
 	theme(text = element_text(size = 12))
 
-title <- 'Manifold Representation of Trade Sequence Simulation with Tuned Model Ensemble'
+title <- paste0('Manifold Representation of Trade Sequence Simulation with Tuned Model Ensemble, for ', model_symbol, ', and target ', model_target)
 
 jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
      , width = 2000, height = 800, units = "px")
