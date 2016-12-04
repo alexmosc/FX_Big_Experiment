@@ -8,6 +8,8 @@
 
 ##### 
 
+rm(list=ls());gc()
+
 setwd('C:/R_study/fx/big_experiment/')
 
 ### loading working data
@@ -998,6 +1000,8 @@ top_counts[,
 ############### Trade Sequence Modelling for Best Validation_1 Models
 ##################
 
+rm(list=ls());gc()
+
 setwd('C:/R_study/fx/big_experiment/')
 
 library(data.table)
@@ -1020,10 +1024,10 @@ working_data <- all_results_gbm_df
 load(file = 'Data/many_train_samples.R')
 
 ### define model
-model_symbol <- 'eurusd'
-model_target <- 181
+model_symbol <- 'usdcad'
+model_target <- 128
 model_target_name <- paste0('future_lag_', model_target)
-model_spread <- 0.0001
+model_spread <- 0.00013
 nseq <- 1000
 modeled_trade_number <- round(5827000/3/2/model_target)
 
@@ -1194,7 +1198,7 @@ p3 <- ggplot(data = rf_distr, aes(x = V1, fill = sample, color = sample)) +
 	ylab("Density") +
 	xlab("Recovery Factor") +
 	geom_vline(xintercept = median(rf_distr[sample == 'model', V1]), size = 1, linetype = 2, colour = 'red') +
-	annotate('text', x = 5, y = 0.1, label = paste0("Model's Median RF = ", round(median(rf_distr[sample == 'model', V1]), 2))) +
+	annotate('text', x = 1, y = 0.1, label = paste0("Model's Median RF = ", round(median(rf_distr[sample == 'model', V1]), 2))) +
 	theme(plot.title = element_text(lineheight =.8, size = 16, face = "bold")) +
 	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
 	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
@@ -1389,7 +1393,7 @@ p3 <- ggplot(data = rf_distr, aes(x = V1, fill = sample, color = sample)) +
 	ylab("Density") +
 	xlab("Recovery Factor") +
 	geom_vline(xintercept = median(rf_distr[sample == 'model', V1]), size = 1, linetype = 2, colour = 'red') +
-	annotate('text', x = 5, y = 0.1, label = paste0("Model's Median RF = ", round(median(rf_distr[sample == 'model', V1]), 2))) +
+	annotate('text', x = 1, y = 0.1, label = paste0("Model's Median RF = ", round(median(rf_distr[sample == 'model', V1]), 2))) +
 	theme(plot.title = element_text(lineheight =.8, size = 16, face = "bold")) +
 	theme(axis.title.x = element_text(lineheight =.8, size = 14, face = "bold")) +
 	theme(axis.title.y = element_text(lineheight =.8, size = 14, face = "bold")) +
