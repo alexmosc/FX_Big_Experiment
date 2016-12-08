@@ -1024,12 +1024,12 @@ working_data <- all_results_gbm_df
 load(file = 'Data/many_train_samples.R')
 
 ### define model
-model_symbol <- 'usdcad'
-model_target <- 128
+model_symbol <- 'eurusd'
+model_target <- 181
 model_target_name <- paste0('future_lag_', model_target)
-model_spread <- 0.00013
+model_spread <- 0.0001
 nseq <- 1000
-modeled_trade_number <- round(5827000/3/2/model_target)
+modeled_trade_number <- round(5827000/3/2/model_target/2)
 
 
 model_set_00 <- working_data[symbol == model_symbol & target2 == model_target, c(5, 20:38), with = F]
@@ -1233,14 +1233,14 @@ for (ii in 1:length(models)){
 	# indexes
 	validate_indexes <- list()
 	for (i in 1:nseq){
-		n <- sample(round(length(validate_trades) / 2), modeled_trade_number * 0.5, replace = FALSE)
+		n <- sample(round(length(validate_trades) / 2), modeled_trade_number, replace = FALSE)
 		validate_indexes[[i]] <- sort(n, decreasing = F)
 	}
 	
 	# sequences
 	validate_sequence <- list()
 	for (i in 1:nseq){
-		validate_sequence[[i]] <- cumsum(validate_trades[validate_indexes[[i]]] - 0.00014)
+		validate_sequence[[i]] <- cumsum(validate_trades[validate_indexes[[i]]] - model_spread)
 	}
 	
 	validate_sequence_dt <- as.data.table(do.call(c, validate_sequence))
@@ -1256,7 +1256,7 @@ for (ii in 1:length(models)){
 title = paste0('Median Recovery Factor on Tuned Ensemble for 1000 Simulated Trade Sequences for ', model_symbol, ', and target ', model_target_name)
 
 jpeg(filename = paste('analysis/', title, '.jpeg', sep = '')
-       , width = 800, height = 600, units = "px")
+       , width = 1200, height = 800, units = "px")
 
 plot(ensembles_rf_median, type = 's', main = title, xlab = "Number of Models Added in Descending Order Based on Cross-Validation Trade Expectation Value", ylab = "Median RF")
 
