@@ -1280,12 +1280,14 @@ modeled_trade_number <- round(5827000/3/2/model_target/2)
 
 model_set_00 <- working_data[symbol == model_symbol & target2 == model_target, c(5, 20:38), with = F]
 setorder(model_set_00, - trade_mean_spreaded_cv)
+models <- model_set_00[, models]
 
 
 # tuned models
 
 model_set_00 <- tuned_working_data[symbol == model_symbol & target2 == model_target, c(5, 20:38), with = F]
 setorder(model_set_00, - trade_mean_spreaded_cv)
+models <- model_set_00[, models]
 
 
 # predict
@@ -1295,8 +1297,6 @@ all_dat_train <- as.data.table(do.call(rbind, many_train_samples))
 rm(many_train_samples)
 
 all_dat_train <- all_dat_train[symbol == model_symbol, ]
-
-models <- model_set_00[, models]
 
 all_dat_train[, (paste('model_output_', models, sep = '')):= lapply(models, function(x) as.numeric(predict(object = all_models_gbm_list[[x]]
 												, newdata = .SD[, 1:114, with = F]
@@ -1309,7 +1309,7 @@ all_dat_train[, (paste('model_output_', models, sep = '')):= lapply(models, func
 													   , newdata = .SD[, 1:114, with = F]
 													   , n.trees = tuned_all_models_gbm_list[[x]]$n.trees)))]
 
-predictions <- all_dat_train[, 133:(132+length(models)), with = F]
+predictions <- all_dat_train[, 133:(132 + length(models)), with = F]
 
 rm(all_dat_train)
 
@@ -1327,7 +1327,6 @@ gray_zone_thresholds <- c(
 ###### validation data
 
 load(file = 'Data/big_dat_test.R')
-
 big_dat_test <- as.data.table(big_dat_test)
 big_dat_test <- big_dat_test[symbol == model_symbol, ]
 
@@ -1335,7 +1334,18 @@ big_dat_test[, (paste('model_output_', models, sep = '')):= lapply(models, funct
 													  , newdata = .SD[, 1:114, with = F]
 													  , n.trees = all_models_gbm_list[[x]]$n.trees)))]
 
+# tuned models
+
+big_dat_test[, (paste('model_output_', models, sep = '')):= lapply(models, function(x) as.numeric(predict(object = tuned_all_models_gbm_list[[x]]
+													  , newdata = .SD[, 1:114, with = F]
+													  , n.trees = tuned_all_models_gbm_list[[x]]$n.trees)))]
+
 rm(all_models_gbm_list)
+
+# tuned
+
+rm(tuned_all_models_gbm_list)
+
 gc()
 
 validate_predictions <- big_dat_test[, c(model_target_name, paste0('model_output_', models)), with = F]
@@ -1433,7 +1443,7 @@ p1 <- ggplot(data = trade_sequence_summary, aes(x = step, y = median, color = mo
 	geom_ribbon(aes(ymin = low_quantile, ymax = upp_quantile, fill = model_type, alpha = 0.1)) +
 	geom_line(size = 2) +
 	scale_y_continuous(limits = c(-2, 2)) +
-	ggtitle('Simulated Cumulative Trading Outcomes (Median, 01-Quantile, and 99-Quantile)') +
+	ggtitle(paste0('Simulated Cumulative Trading Outcomes (Median, 01-Quantile, and 99-Quantile) for ', nseq, ' Monte-Carlo Simulations', ', for ', modeled_trade_number, ' Number of Trades')) +
 	ylab("Cumulative Points") +
 	xlab("Trade Sequence") +
 	theme(plot.title = element_text(lineheight =.8, size = 14, face = "bold")) +
