@@ -496,14 +496,14 @@ for (train_subset in 1:length(many_train_samples)){
 		    , row.names = F)
 	
 	if(train_subset%%10 == 0){
-		save(gbm_model_list, file = paste0('Large_Study_5part/gbm_model_list_gauss_all_symbols_', train_subset%/%10, '.R'))
+		save(gbm_model_list, file = paste0('Large_Study_5part/gbm_model_list_laplace_all_symbols_', train_subset%/%10, '.R'))
 		rm(gbm_model_list)
 		gc()
 	}
 	
 }
 
-save(gbm_model_list, file = paste0('Large_Study_5part/gbm_model_list_gauss_all_symbols_', train_subset%/%10+1, '.R'))
+save(gbm_model_list, file = paste0('Large_Study_5part/gbm_model_list_laplace_all_symbols_', train_subset%/%10+1, '.R'))
 
 
 ##### 
@@ -583,6 +583,54 @@ write.table(all_results_gbm_df, file = 'Large_Study_3part/all_results_gbm_df.csv
 	   , dec = ',')
 
 
+#### tuned predictor set results
+
+setwd('C:/R_study/fx/big_experiment/')
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_1.R')
+tuned_all_models_gbm_list <- gbm_model_list
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_2.R')
+tuned_all_models_gbm_list <- c(tuned_all_models_gbm_list, gbm_model_list)
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_3.R')
+tuned_all_models_gbm_list <- c(tuned_all_models_gbm_list, gbm_model_list)
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_4.R')
+tuned_all_models_gbm_list <- c(tuned_all_models_gbm_list, gbm_model_list)
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_5.R')
+tuned_all_models_gbm_list <- c(tuned_all_models_gbm_list, gbm_model_list)
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_6.R')
+tuned_all_models_gbm_list <- c(tuned_all_models_gbm_list, gbm_model_list)
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_7.R')
+tuned_all_models_gbm_list <- c(tuned_all_models_gbm_list, gbm_model_list)
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_8.R')
+tuned_all_models_gbm_list <- c(tuned_all_models_gbm_list, gbm_model_list)
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_9.R')
+tuned_all_models_gbm_list <- c(tuned_all_models_gbm_list, gbm_model_list)
+
+load('Large_Study_5part/gbm_model_list_laplace_all_symbols_10.R')
+tuned_all_models_gbm_list <- c(tuned_all_models_gbm_list, gbm_model_list)
+
+
+save(tuned_all_models_gbm_list, file = 'Large_Study_5part/tuned_all_models_gbm_list.R')
+
+
+tuned_all_results_gbm_df <- validating_arr
+tuned_all_results_gbm_df$models <- seq(1, 2970, 1)
+tuned_all_results_gbm_df <- na.omit(tuned_all_results_gbm_df)
+tuned_all_results_gbm_df$target <- as.character(tuned_all_results_gbm_df$target)
+tuned_all_results_gbm_df$target2 <- as.integer(gsub("future_lag_", '', tuned_all_results_gbm_df$target))
+
+write.table(tuned_all_results_gbm_df, file = 'Large_Study_5part/tuned_all_results_gbm_df.csv'
+	    , row.names = F
+	    , sep = ';'
+	    , dec = ',')
 
 ########################### Charts
 
@@ -595,16 +643,19 @@ library(doParallel)
 library(tseries)
 library(gridExtra)
 
-
-load(file = 'Large_Study_3part/all_models_gbm_list.R')
-
 all_results_gbm_df <- read.table('Large_Study_3part/all_results_gbm_df.csv'
 	    , header = T
 	    , sep = ';'
 	    , dec = ',')
 
+tuned_all_results_gbm_df <- read.table('Large_Study_5part/tuned_all_results_gbm_df.csv'
+				 , header = T
+				 , sep = ';'
+				 , dec = ',')
+
 
 working_data <- as.data.table(all_results_gbm_df)
+tuned_working_data <- as.data.table(tuned_all_results_gbm_df)
 
 #### distributions of mae improve for validate
 
