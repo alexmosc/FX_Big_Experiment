@@ -845,6 +845,169 @@ ggsave(filename = paste('analysis/', title, '.jpeg', sep = '')
 dev.off()
 
 
+#### comparison all_train VS tuned_train for distributions of mae improve for validate
+
+compare_dat <- rbind(working_data[target2 >= 128, c('symbol', 'target2', 'models', "mae_mean_validate"), with = F]
+		     , tuned_working_data[, c('symbol', 'target2', 'models', "mae_mean_validate"), with = F])
+compare_dat[, iteration:= c(rep('all_predictors', times = nrow(working_data[target2 >= 128, ])), rep('tuned_predictors', times = nrow(tuned_working_data)))]
+
+title <- "Comparison of Distributions of Mean Absolute Error Decrease for All-Predictor and Tuned-Predictor Models by Symbol and Target for Validation_1 Samples"
+
+p <- ggplot(data = compare_dat, aes(x = as.factor(target2), y = mae_mean_validate, fill = iteration)) + 
+	facet_wrap(~ symbol, scales = "free") +
+	theme_bw() +
+	geom_boxplot() +
+	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
+	ggtitle(title) + 
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
+	theme(plot.title = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
+
+print(p)
+
+ggsave(filename = paste('analysis/', title, '.jpeg', sep = '')
+       , plot = last_plot()
+       , device = 'jpeg'
+       , width = 300, height = 200, units = "mm"
+       , dpi = 300)
+
+dev.off()
+
+rm(compare_dat)
+
+
+#### comparison all_train VS tuned_train for distributions of R^2 for validate
+
+compare_dat <- rbind(working_data[target2 >= 128, c('symbol', 'target2', 'models', "r_sqr_validate"), with = F]
+		     , tuned_working_data[, c('symbol', 'target2', 'models', "r_sqr_validate"), with = F])
+compare_dat[, iteration:= c(rep('all_predictors', times = nrow(working_data[target2 >= 128, ])), rep('tuned_predictors', times = nrow(tuned_working_data)))]
+
+title <- "Comparison of Distributions of R^2 for All-Predictor and Tuned-Predictor Models by Symbol and Target for Validation_1 Samples"
+
+p <- ggplot(data = compare_dat, aes(x = as.factor(target2), y = r_sqr_validate, fill = iteration)) + 
+	facet_wrap(~ symbol, scales = "free") +
+	theme_bw() +
+	geom_boxplot() +
+	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
+	ggtitle(title) + 
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
+	theme(plot.title = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
+
+print(p)
+
+ggsave(filename = paste('analysis/', title, '.jpeg', sep = '')
+       , plot = last_plot()
+       , device = 'jpeg'
+       , width = 300, height = 200, units = "mm"
+       , dpi = 300)
+
+dev.off()
+
+rm(compare_dat)
+
+
+#### comparison all_train VS tuned_train for distributions of profit minus drawdown for validate
+
+compare_dat <- rbind(working_data[target2 >= 128, c('symbol', 'target2', 'models', "pro_draw_validate"), with = F]
+		     , tuned_working_data[, c('symbol', 'target2', 'models', "pro_draw_validate"), with = F])
+compare_dat[, iteration:= c(rep('all_predictors', times = nrow(working_data[target2 >= 128, ])), rep('tuned_predictors', times = nrow(tuned_working_data)))]
+
+title <- "Comparison of Distributions of Profit Minus Max Drawdown (point) for All-Predictor and Tuned-Predictor Models by Symbol and Target for Validation_1 Samples"
+
+p <- ggplot(data = compare_dat, aes(x = as.factor(target2), y = pro_draw_validate, fill = iteration)) + 
+	facet_wrap(~ symbol, scales = "free") +
+	theme_bw() +
+	geom_boxplot() +
+	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
+	ggtitle(title) + 
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
+	theme(plot.title = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
+
+print(p)
+
+ggsave(filename = paste('analysis/', title, '.jpeg', sep = '')
+       , plot = last_plot()
+       , device = 'jpeg'
+       , width = 300, height = 200, units = "mm"
+       , dpi = 300)
+
+dev.off()
+
+rm(compare_dat)
+
+
+#### comparison all_train VS tuned_train for distributions of expectation for validate
+
+compare_dat <- rbind(working_data[target2 >= 128, c('symbol', 'target2', 'models', "trade_mean_spreaded_validate"), with = F]
+		     , tuned_working_data[, c('symbol', 'target2', 'models', "trade_mean_spreaded_validate"), with = F])
+compare_dat[, iteration:= c(rep('all_predictors', times = nrow(working_data[target2 >= 128, ])), rep('tuned_predictors', times = nrow(tuned_working_data)))]
+
+title <- "Comparison of Distributions of Trade Expectation (point) for All-Predictor and Tuned-Predictor Models by Symbol and Target for Validation_1 Samples"
+
+p <- ggplot(data = compare_dat, aes(x = as.factor(target2), y = trade_mean_spreaded_validate, fill = iteration)) + 
+	facet_wrap(~ symbol, scales = "free") +
+	theme_bw() +
+	geom_boxplot() +
+	geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
+	ggtitle(title) + 
+	xlab('Target Prediction Horizon (t0 + n Minutes)') +
+	theme(plot.title = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+	theme(text = element_text(size = 7))
+
+print(p)
+
+ggsave(filename = paste('analysis/', title, '.jpeg', sep = '')
+       , plot = last_plot()
+       , device = 'jpeg'
+       , width = 300, height = 200, units = "mm"
+       , dpi = 300)
+
+dev.off()
+
+rm(compare_dat)
+
+
+#### comparison all_train VS tuned_train for train sets of expectation for validate
+
+compare_dat <- rbind(working_data[target2 >= 128, c('symbol', 'target2', "train_subset", "trade_mean_spreaded_validate"), with = F]
+		     , tuned_working_data[, c('symbol', 'target2', "train_subset", "trade_mean_spreaded_validate"), with = F])
+compare_dat[, iteration:= c(rep('all_predictors', times = nrow(working_data[target2 >= 128, ])), rep('tuned_predictors', times = nrow(tuned_working_data)))]
+
+compare_dat[, 
+	    {
+	    	title <- paste0("Comparison of Distributions of Trade Expectation (point) for All-Predictor and Tuned-Predictor Models by Train Set, Symbol, for Target ", target2, ", for Validation_1 Samples")
+	    	p <- ggplot(data = .SD, aes(x = as.factor(train_subset), y = trade_mean_spreaded_validate, group = iteration, colour = iteration)) + 
+			facet_wrap(~ symbol) +
+			theme_bw() +
+			geom_line() +
+	    		scale_x_discrete(breaks = c(1,11,21,31,41,51,61,71,81,91)) +
+			geom_hline(aes(yintercept = 0), linetype = 2, colour = 'red', size = 1) +
+			ggtitle(title) + 
+			xlab('Train Subset (one model)') +
+			theme(plot.title = element_text(lineheight =.8, size = 10, face = "bold")) +
+			theme(axis.title.x = element_text(lineheight =.8, size = 10, face = "bold")) +
+			theme(text = element_text(size = 7))
+	    	print(p)
+	    	
+	    	ggsave(filename = paste('analysis/', title, '.jpeg', sep = '')
+	    	       , plot = last_plot()
+	    	       , device = 'jpeg'
+	    	       , width = 300, height = 200, units = "mm"
+	    	       , dpi = 300)
+	    	dev.off()
+	    }
+
+, by = target2]
+
+rm(compare_dat)
+
+
 #### Correlation of Sample Statistics cv and validate - for mae improve
 
 dat <- melt(working_data, id.vars = c('symbol', 'target2', 'models'), measure.vars = c("mae_mean_cv", "mae_mean_validate"))
@@ -1085,7 +1248,21 @@ all_results_gbm_df <- fread('Large_Study_3part/all_results_gbm_df.csv'
 				 , sep = ';'
 				 , dec = ',')
 
+# tuned results
+
+load(file = 'Large_Study_5part/tuned_all_models_gbm_list.R')
+
+tuned_all_results_gbm_df <- fread('Large_Study_5part/tuned_all_results_gbm_df.csv'
+			    , header = T
+			    , sep = ';'
+			    , dec = ',')
+
+
 working_data <- all_results_gbm_df
+
+tuned_working_data <- tuned_all_results_gbm_df
+
+# load train data
 
 load(file = 'Data/many_train_samples.R')
 
