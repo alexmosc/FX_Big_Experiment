@@ -1262,21 +1262,33 @@ working_data <- all_results_gbm_df
 
 tuned_working_data <- tuned_all_results_gbm_df
 
+
 # load train data
 
 load(file = 'Data/many_train_samples.R')
 
+
 ### define model
-model_symbol <- 'eurusd'
-model_target <- 181
+
+model_symbol <- 'usdcad'
+model_target <- 724
 model_target_name <- paste0('future_lag_', model_target)
-model_spread <- 0.0001
+model_spread <- 0.00013
 nseq <- 1000
 modeled_trade_number <- round(5827000/3/2/model_target/2)
 
 
 model_set_00 <- working_data[symbol == model_symbol & target2 == model_target, c(5, 20:38), with = F]
 setorder(model_set_00, - trade_mean_spreaded_cv)
+
+
+# tuned models
+
+model_set_00 <- tuned_working_data[symbol == model_symbol & target2 == model_target, c(5, 20:38), with = F]
+setorder(model_set_00, - trade_mean_spreaded_cv)
+
+
+# predict
 
 all_dat_train <- as.data.table(do.call(rbind, many_train_samples))
 
@@ -1289,6 +1301,13 @@ models <- model_set_00[, models]
 all_dat_train[, (paste('model_output_', models, sep = '')):= lapply(models, function(x) as.numeric(predict(object = all_models_gbm_list[[x]]
 												, newdata = .SD[, 1:114, with = F]
 												, n.trees = all_models_gbm_list[[x]]$n.trees)))]
+
+
+# tuned models
+
+all_dat_train[, (paste('model_output_', models, sep = '')):= lapply(models, function(x) as.numeric(predict(object = tuned_all_models_gbm_list[[x]]
+													   , newdata = .SD[, 1:114, with = F]
+													   , n.trees = tuned_all_models_gbm_list[[x]]$n.trees)))]
 
 predictions <- all_dat_train[, 133:(132+length(models)), with = F]
 
