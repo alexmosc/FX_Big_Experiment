@@ -503,7 +503,7 @@ for (train_subset in 1:length(many_train_samples)){
 	
 }
 
-save(gbm_model_list, file = paste0('big_experiment/Large_Study_5part/gbm_model_list_gauss_all_symbols_', train_subset%/%10+1, '.R'))
+save(gbm_model_list, file = paste0('Large_Study_5part/gbm_model_list_gauss_all_symbols_', train_subset%/%10+1, '.R'))
 
 
 ##### 
