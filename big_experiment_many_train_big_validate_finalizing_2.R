@@ -16,6 +16,11 @@ setwd('C:/R_study/fx/big_experiment/')
 load(file = 'Data/many_train_samples.R')
 load(file = 'Data/big_dat_test.R')
 
+## load best inputs by target
+top_inputs_targets <- read.table(file = 'Large_Study_3part/top_inputs_targets_laplace.csv'
+	    , sep = ';'
+	    , dec = ','
+	   , header = T)
 
 library(caret)
 library(gbm)
@@ -135,7 +140,7 @@ spreads <- as.data.frame(cbind(
 
 spreads$V1 <- as.character(spreads$V1)
 spreads$V2 <- as.numeric(as.character(spreads$V2))
-optimized_metric <- 'r_sqr'
+optimized_metric <- 'mae_mean'
 validating_arr <- data.frame()
 distributions <- c('gaussian', 'laplace')
 used_distribution <- 1
@@ -157,7 +162,7 @@ for (train_subset in 1:length(many_train_samples)){
 	
 	for (symbol in 1:length(symbol_set)){
 	
-		for (targets in 1:18){
+		for (targets in 13:18){
 			
 			for (best_inp_num in seq(from = 6, to = max_best_input_number, by = 1)){
 				
@@ -191,18 +196,20 @@ for (train_subset in 1:length(many_train_samples)){
 						
 						train_set$symbol <- NULL
 						
-						input_eval <- gbm(train_set[, ncol(train_set)] ~ .
-						    , data = train_set[, 1:(ncol(train_set) - 1)]
-						    , distribution = distributions[used_distribution]
-						    , n.trees = 100
-						    , interaction.depth = best_inp_num
-						    , n.minobsinnode = 100
-						    , bag.fraction = bag_frac
-						    , shrinkage = 0.01
-						    , verbose = T
-						    , n.cores = 4)
+						#input_eval <- gbm(train_set[, ncol(train_set)] ~ .
+						#    , data = train_set[, 1:(ncol(train_set) - 1)]
+						#    , distribution = distributions[used_distribution]
+						#    , n.trees = 100
+						#    , interaction.depth = best_inp_num
+						#    , n.minobsinnode = 100
+						#    , bag.fraction = bag_frac
+						#    , shrinkage = 0.01
+						#    , verbose = T
+						#    , n.cores = 4)
 						
-						best_inputs <- as.character(summary(input_eval)[[1]][1:best_inp_num])
+						#best_inputs <- as.character(summary(input_eval)[[1]][1:best_inp_num])
+						
+						best_inputs <- as.character(subset(top_inputs_targets, top_inputs_targets$target2 == as.integer(unlist(strsplit(x = outputs[targets], split = '_', fixed = T))[3]))[, 'value'])
 						
 						print(best_inputs)
 						
@@ -483,20 +490,21 @@ for (train_subset in 1:length(many_train_samples)){
 		
 	}
 	
-	write.table(validating_arr, file = 'big_experiment/Large_Study_4part/gbm_gauss_all_symbols.csv'
+	write.table(validating_arr, file = 'Large_Study_5part/gbm_gauss_all_symbols.csv'
 		    , sep = ';'
 		    , dec = ','
 		    , row.names = F)
 	
 	if(train_subset%%10 == 0){
-		save(gbm_model_list, file = paste0('big_experiment/Large_Study_4part/gbm_model_list_gauss_all_symbols_', train_subset%/%10, '.R'))
+		save(gbm_model_list, file = paste0('Large_Study_5part/gbm_model_list_gauss_all_symbols_', train_subset%/%10, '.R'))
 		rm(gbm_model_list)
 		gc()
 	}
 	
 }
 
-save(gbm_model_list, file = paste0('big_experiment/Large_Study_4part/gbm_model_list_gauss_all_symbols_', train_subset%/%10+1, '.R'))
+save(gbm_model_list, file = paste0('big_experiment/Large_Study_5part/gbm_model_list_gauss_all_symbols_', train_subset%/%10+1, '.R'))
+
 
 ##### 
 
@@ -926,6 +934,13 @@ dat <- melt(working_data, id.vars = 'target2', measure.vars = c('best_inputs_1',
 counts <- dat[, .N, by = .(target2, variable, value)]
 setorder(counts, target2, variable, -N)
 top_counts <- counts[, .SD[1:10], .(target2, variable)]
+
+top_inputs_targets <- top_counts[variable == 'best_inputs_1', ]
+
+write.table(top_inputs_targets, file = 'Large_Study_3part/top_inputs_targets_laplace.csv'
+	    , sep = ';'
+	    , dec = ','
+	    , row.names = F)
 
 top_counts[, 
        {
