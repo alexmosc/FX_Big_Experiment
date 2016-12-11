@@ -118,7 +118,7 @@ gbmGrid <- expand.grid(interaction.depth = seq(from = 1, to = 3, by = 1)
                        , n.minobsinnode = seq(from = 30, to = 90, by = 30))
 
 # define variables
-inputs <- c(names(many_train_samples[[1]])[1:114]) #'symbol', 'hour', 'lag_diff_724', 'lag_diff_512', 'lag_diff_64', 'lag_range_724', 'lag_range_512', 'lag_sd_256', 'lag_mean_diff_128', 'lag_min_diff_23', 'lag_min_diff_11') #
+inputs <- c(names(many_train_samples[[1]])[1:114])
 outputs <- names(many_train_samples[[1]])[115:132]
 
 
@@ -143,7 +143,7 @@ spreads$V2 <- as.numeric(as.character(spreads$V2))
 optimized_metric <- 'mae_mean'
 validating_arr <- data.frame()
 distributions <- c('gaussian', 'laplace')
-used_distribution <- 1
+used_distribution <- 2
 max_best_models <- 1
 max_best_input_number <- 6
 gray_zone <- 0.9
@@ -490,7 +490,7 @@ for (train_subset in 1:length(many_train_samples)){
 		
 	}
 	
-	write.table(validating_arr, file = 'Large_Study_5part/gbm_gauss_all_symbols.csv'
+	write.table(validating_arr, file = 'Large_Study_5part/gbm_laplace_all_symbols.csv'
 		    , sep = ';'
 		    , dec = ','
 		    , row.names = F)
